@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-body bg-surface-light text-brand-black transition-colors duration-300;
+  }
+
+  html.dark body {
+    @apply bg-surface-dark text-white;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .surface {
+    @apply bg-white dark:bg-surface-off-dark;
+  }
+
+  .card-elevate {
+    @apply shadow-soft hover:shadow-soft-lg transition-shadow duration-300;
+  }
+}
