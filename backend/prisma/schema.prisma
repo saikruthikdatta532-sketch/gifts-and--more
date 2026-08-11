@@ -1,0 +1,162 @@
+// Return Gifts & Bulk Orders — Database Schema
+// PostgreSQL + Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------
+// ENUMS
+// ---------------------------------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityAction {
+  PRODUCT_CREATED
+  PRODUCT_UPDATED
+  PRODUCT_DELETED
+  STOCK_UPDATED
+  CATEGORY_CREATED
+  CATEGORY_UPDATED
+  CATEGORY_DELETED
+  ENQUIRY_CREATED
+  ENQUIRY_UPDATED
+  REVENUE_RECORDED
+  ADMIN_LOGIN
+}
+
+// ---------------------------------
+// MODELS
+// ---------------------------------
+
+model User {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  name      String
+  email     String   @unique
+  image     String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activityLogs ActivityLog[]
+
+  @@index([email])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+
+  @@index([slug])
+}
+
+model Product {
+  id                     String   @id @default(cuid())
+  name                   String
+  slug                   String   @unique
+  description            String
+  price                  Decimal  @db.Decimal(10, 2)
+  stockQuantity          Int      @default(0)
+  minimumBulkQuantity    Int?
+  isAvailable            Boolean  @default(true)
+  isFeatured             Boolean  @default(false)
+  customizationAvailable Boolean  @default(false)
+  eventType              String?
+  metaTitle              String?
+  metaDescription        String?
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  images    ProductImage[]
+  enquiries Enquiry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([isAvailable])
+  @@index([isFeatured])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?
+  sortOrder Int     @default(0)
+
+  @@index([productId])
+}
+
+model Enquiry {
+  id             String        @id @default(cuid())
+  customerName   String
+  customerPhone  String
+  productId      String?
+  product        Product?      @relation(fields: [productId], references: [id])
+  quantity       Int?
+  eventType      String?
+  expectedValue  Decimal?      @db.Decimal(10, 2)
+  status         EnquiryStatus @default(NEW)
+  notes          String?
+
+  revenue Revenue?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([productId])
+}
+
+model Revenue {
+  id         String   @id @default(cuid())
+  enquiryId  String   @unique
+  enquiry    Enquiry  @relation(fields: [enquiryId], references: [id])
+  amount     Decimal  @db.Decimal(10, 2)
+  notes      String?
+  recordedAt DateTime @default(now())
+
+  @@index([recordedAt])
+}
+
+model ActivityLog {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id])
+  action     ActivityAction
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime       @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+}
